@@ -40,7 +40,7 @@
       <a href="#harold">Harold</a>
       <a href="#faq">FAQ</a>
     </nav>
-    <a class="btn btn--small" href="#order">Get the book</a>
+    <a class="btn btn--small" href="#order" data-buy>Get the book</a>
   </div>
 </header>
 
@@ -54,7 +54,7 @@
       <h1 class="rise">Good food should not make you nervous about <em>the bill.</em></h1>
       <p class="hero__lede rise">Seventy-five old family recipes from an Ashkenazi home kitchen: soups, kugels, brisket, blintzes, Shabbat for less. Every recipe comes with an honest cost line and a plan for tomorrow's leftovers. It's how grandmothers cooked. The receipt is from 2026.</p>
       <div class="hero__cta rise">
-        <a class="btn" href="#order">Get the book · <span data-price></span></a>
+        <a class="btn" href="#order" data-buy>Get the book · <span data-price></span></a>
         <a class="btn btn--ghost" href="#sample">Read a page</a>
       </div>
       <dl class="stats rise">
@@ -265,8 +265,8 @@
         <li>A two-week meal plan, a frugal pantry shopping list and a leftover decision table</li>
         <li>Food safety and storage guidance built in</li>
       </ul>
-      <a class="btn btn--block btn--big" id="buy" href="#">Buy the e-book · <span data-price></span></a>
-      <p class="order__fine">Read on your phone, tablet or computer, or print it and keep it by the stove. Covered by our <a href="refunds.html">30-day money-back guarantee</a>.</p>
+      <a class="btn btn--block btn--big" id="buy" href="#order" data-buy>Buy the e-book · <span data-price></span></a>
+      <p class="order__fine">Read on your phone, tablet or computer, or print it and keep it by the stove. Covered by our <a href="refunds.html">24-hour money-back guarantee</a>.</p>
     </div>
   </div>
 </section>
@@ -312,7 +312,7 @@
   <div class="wrap lastcall__in reveal">
     <p class="scribble scribble--light">Cook through it slowly. Mark what your family likes.</p>
     <h2>Stretch the roast. Save the bread. <em>Make the onions earn their keep.</em></h2>
-    <a class="btn btn--light btn--big" href="#order">Get the book · <span data-price></span></a>
+    <a class="btn btn--light btn--big" href="#order" data-buy>Get the book · <span data-price></span></a>
   </div>
 </section>
 
@@ -339,6 +339,7 @@
   </div>
 </footer>
 
+<script src="https://cdn.paddle.com/paddle/v2/paddle.js"></script>
 <script src="assets/recipes.js"></script>
 <script src="script.js"></script>
 </body>

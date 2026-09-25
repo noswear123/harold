@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Your Cookbook · Grandpa Harold Cooks</title>
+<meta name="description" content="Download your copy of Frugal Jewish Kitchen.">
+<link rel="canonical" href="https://haroldcooks.com/download">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#F4ECDC">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='12' fill='%23231A12'/><text x='32' y='44' font-family='Georgia,serif' font-size='34' font-weight='700' text-anchor='middle' fill='%23F4ECDC'>H</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=Courier+Prime:wght@400;700&family=Caveat:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap nav__in nav__in--simple">
+    <a class="logo" href="index.html" aria-label="Grandpa Harold Cooks, home">
+      <span class="logo__mark">H</span>
+      <span class="logo__text">Grandpa Harold <em>Cooks</em></span>
+    </a>
+  </div>
+</header>
+
+<main class="thanks">
+  <div class="wrap thanks__in">
+    <h1>Thank You for Your Purchase</h1>
+    <p class="thanks__text">Your cookbook is ready. Click the button below to download it.</p>
+    <a class="btn btn--big btn--download" id="download" href="#" aria-disabled="true">Please wait a moment…</a>
+    <p class="thanks__note" id="note" hidden>The file will be saved to your Downloads folder. You can come back to this page to download it again.</p>
+    <p class="thanks__help" id="help" hidden></p>
+  </div>
+</main>
+
+<script>
+// Waits for Paddle's payment confirmation (usually a few seconds), then enables the button.
+(function () {
+  var txn = new URLSearchParams(location.search).get('txn') || '';
+  var btn = document.getElementById('download');
+  var help = document.getElementById('help');
+  var contact = ' Please email <a href="mailto:hello@haroldcooks.com?subject=Cookbook%20download">hello@haroldcooks.com</a> with your Paddle receipt and we will send your cookbook right away.';
+  var tries = 0;
+
+  function showHelp(html) { help.innerHTML = html; help.hidden = false; }
+
+  if (!/^txn_[a-z0-9]{20,40}$/.test(txn)) {
+    btn.hidden = true;
+    showHelp('We could not find your order on this page.' + contact);
+    return;
+  }
+
+  function check() {
+    fetch('/api/download?check=1&txn=' + encodeURIComponent(txn), { cache: 'no-store' })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (d.ready) {
+          btn.href = '/api/download?txn=' + encodeURIComponent(txn);
+          btn.textContent = 'DOWNLOAD YOUR COOKBOOK';
+          btn.removeAttribute('aria-disabled');
+          document.getElementById('note').hidden = false;
+          help.hidden = true;
+        } else retry();
+      })
+      .catch(retry);
+  }
+  function retry() {
+    tries++;
+    if (tries === 10) showHelp('Your payment is still being confirmed. This page will keep checking, so please leave it open.');
+    if (tries === 45) showHelp('This is taking longer than usual. Please refresh this page in a few minutes.' + contact);
+    if (tries < 90) setTimeout(check, 2000);
+  }
+  check();
+})();
+</script>
+</body>
+</html>

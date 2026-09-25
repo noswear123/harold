@@ -1,0 +1,5 @@
+# Static site served from the project root; Netlify Functions handle checkout
+# confirmation and the paid PDF download. No build step.
+[build]
+  publish = "."
+  functions = "netlify/functions"

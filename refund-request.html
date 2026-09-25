@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Request a Refund · Grandpa Harold Cooks</title>
+<meta name="description" content="Request a refund for the Frugal Jewish Kitchen e-book within 24 hours of purchase.">
+<link rel="canonical" href="https://haroldcooks.com/refund-request">
+<meta name="theme-color" content="#F4ECDC">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='12' fill='%23231A12'/><text x='32' y='44' font-family='Georgia,serif' font-size='34' font-weight='700' text-anchor='middle' fill='%23F4ECDC'>H</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=Courier+Prime:wght@400;700&family=Caveat:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap nav__in">
+    <a class="logo" href="index.html" aria-label="Grandpa Harold Cooks, home">
+      <span class="logo__mark">H</span>
+      <span class="logo__text">Grandpa Harold <em>Cooks</em></span>
+    </a>
+    <nav class="nav__links" aria-label="Main">
+      <a href="index.html#book">The Book</a>
+      <a href="index.html#inside">Inside</a>
+      <a href="index.html#harold">Harold</a>
+      <a href="index.html#faq">FAQ</a>
+    </nav>
+    <a class="btn btn--small" href="index.html#order">Get the book</a>
+  </div>
+</header>
+
+<main class="legal">
+  <div class="wrap legal__in">
+    <div class="legal__head">
+      <p class="label">24-hour money-back guarantee</p>
+      <h1>Request a <em>Refund</em></h1>
+      <p class="legal__date">No account or login needed</p>
+    </div>
+
+    <p>Fill in this short form within 24 hours of your purchase. We review every request by hand and reply by email, usually within 2 business days. Approved refunds are processed through Paddle to your original payment method. See our <a href="refunds.html">Refund Policy</a> for details.</p>
+
+    <form class="card form" name="refund-request" method="POST" action="/refund-request-sent" data-netlify="true" netlify-honeypot="company">
+      <input type="hidden" name="form-name" value="refund-request">
+      <p class="form__hp"><label>Leave this empty <input name="company" tabindex="-1" autocomplete="off"></label></p>
+
+      <div class="form__field">
+        <label for="f-name">Full name</label>
+        <input id="f-name" name="name" type="text" autocomplete="name" required>
+      </div>
+      <div class="form__field">
+        <label for="f-email">Email used for purchase</label>
+        <input id="f-email" name="email" type="email" autocomplete="email" required>
+      </div>
+      <div class="form__field">
+        <label for="f-order">Paddle order or transaction ID <small>(optional)</small></label>
+        <input id="f-order" name="order_id" type="text" placeholder="e.g. txn_01h… or the order number on your receipt">
+        <p class="form__hint">You'll find it on the receipt email from Paddle. Leave it blank if you can't find it.</p>
+      </div>
+      <div class="form__field">
+        <label for="f-reason">Short reason for refund</label>
+        <textarea id="f-reason" name="reason" maxlength="1000" required></textarea>
+      </div>
+      <button class="btn btn--big" type="submit">Send refund request</button>
+    </form>
+
+    <p class="legal__others"><a href="refunds.html">Refund Policy</a> <a href="terms.html">Terms of Sale</a> <a href="privacy.html">Privacy Policy</a></p>
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="wrap footer__in">
+    <div>
+      <a class="logo logo--light" href="index.html"><span class="logo__mark">H</span><span class="logo__text">Grandpa Harold <em>Cooks</em></span></a>
+      <p class="footer__tag">A meal · a memory · a blessing</p>
+    </div>
+    <nav class="footer__links" aria-label="Footer">
+      <a href="index.html#order">Order</a>
+      <a href="terms.html">Terms</a>
+      <a href="privacy.html">Privacy</a>
+      <a href="refunds.html">Refunds</a>
+      <a href="mailto:hello@haroldcooks.com">Contact</a>
+    </nav>
+  </div>
+  <div class="wrap footer__fine">
+    <p>© 2026 Grandpa Harold Cooks · Harold Rosenberg. All rights reserved.</p>
+  </div>
+</footer>
+
+</body>
+</html>

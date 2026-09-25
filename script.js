@@ -1,9 +1,29 @@
-// ---- Site settings: change these two lines before launch ----
-const PRICE = '$19';                 // TODO: confirm the real price
-const CHECKOUT_URL = '#order';       // TODO: paste the Gumroad / Lemon Squeezy / Stripe link
+// ---- Site settings ----
+const PRICE = '$12.99';               // keep in sync with the price set in Paddle
+const PADDLE_TOKEN = 'live_235420c889bd31b53a07951c584';   // client-side token, safe to publish
+const PADDLE_PRICE_ID = 'pri_01m3cnmvbdeb542pmtxvrdm919';
 
 document.querySelectorAll('[data-price]').forEach(el => { el.textContent = PRICE; });
-document.getElementById('buy').href = CHECKOUT_URL;
+
+// ---- Checkout: Buy -> Paddle overlay -> /download ----
+// If Paddle.js fails to load, the buttons keep their #order link as a fallback.
+if (window.Paddle) {
+  Paddle.Initialize({
+    token: PADDLE_TOKEN,
+    eventCallback: e => {
+      if (e.name === 'checkout.completed' && e.data && e.data.transaction_id) {
+        location.href = '/download?txn=' + encodeURIComponent(e.data.transaction_id);
+      }
+    },
+  });
+  document.querySelectorAll('[data-buy]').forEach(btn => btn.addEventListener('click', e => {
+    e.preventDefault();
+    Paddle.Checkout.open({
+      items: [{ priceId: PADDLE_PRICE_ID, quantity: 1 }],
+      settings: { displayMode: 'overlay', variant: 'one-page' },
+    });
+  }));
+}
 
 const book = window.BOOK || [];
 const all = book.flatMap(ch => ch.recipes.map(r => ({ ...r, chapter: ch.n })));

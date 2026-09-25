@@ -452,3 +452,5 @@ p { margin: 0 0 1em; color: var(--ink-2); }
 .legal__others { margin-top: 56px; padding-top: 22px; border-top: 1px dashed var(--line); font-family: var(--type); font-size: .82rem; letter-spacing: .08em; text-transform: uppercase; }
 .legal__others a { margin-right: 20px; }
 .footer__links a[aria-current="page"] { color: var(--honey); }
+.recipe__look { display: block; margin-top: 3px; font-family: var(--type); font-size: .78rem; line-height: 1.45; color: var(--towel); }
+.recipe__rule { margin: 18px 0 0; font-size: .95rem; font-style: italic; }

@@ -149,16 +149,9 @@ p { margin: 0 0 1em; color: var(--ink-2); }
 }
 .nav__in { display: flex; align-items: center; gap: 24px; height: 68px; }
 .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--ink); }
-.logo__mark {
-  display: grid; place-items: center; width: 38px; height: 38px;
-  background: var(--ink); color: var(--cream);
-  font-family: var(--display); font-size: 1.35rem; border-radius: 50%;
-  box-shadow: inset 0 0 0 3px var(--ink), inset 0 0 0 4px var(--honey);
-}
 .logo__text { font-family: var(--display); font-size: 1.28rem; line-height: 1; }
 .logo__text em { color: var(--paprika); }
 .logo--light { color: var(--cream); }
-.logo--light .logo__mark { background: var(--cream); color: var(--ink); box-shadow: inset 0 0 0 3px var(--cream), inset 0 0 0 4px var(--paprika); }
 .nav__links { display: flex; gap: 26px; margin-left: auto; }
 .nav__links a { font-family: var(--type); font-size: .82rem; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2); text-decoration: none; padding: 4px 0; border-bottom: 2px solid transparent; }
 .nav__links a:hover { border-color: var(--paprika); color: var(--ink); }
@@ -480,3 +473,5 @@ p { margin: 0 0 1em; color: var(--ink-2); }
 .form textarea { min-height: 120px; resize: vertical; }
 .form__hint { font-size: .92rem; color: var(--ink-mute); margin: 6px 0 0; }
 .form__hp { position: absolute; left: -9999px; }
+.about__yt { margin-top: 32px; }
+@media (max-width: 480px) { .about__yt { display: flex; width: 100%; white-space: normal; text-align: center; } }

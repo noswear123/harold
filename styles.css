@@ -436,3 +436,19 @@ p { margin: 0 0 1em; color: var(--ink-2); }
 .footer__links a { color: var(--cream); text-decoration: none; font-family: var(--type); font-size: .82rem; letter-spacing: .08em; text-transform: uppercase; }
 .footer__links a:hover { color: var(--honey); }
 .footer__fine p { font-size: .82rem; color: #A89880; margin: 24px 0 0; max-width: 900px; }
+
+/* ============ LEGAL PAGES (terms, privacy, refunds) ============ */
+.legal { padding: clamp(48px, 7vw, 88px) 0 clamp(64px, 9vw, 112px); }
+.legal__in { max-width: 780px; }
+.legal__head { margin-bottom: 36px; padding-bottom: 28px; border-bottom: 2px solid var(--ink); }
+.legal__head h1 { font-size: clamp(2.4rem, 5vw, 3.6rem); }
+.legal__date { font-family: var(--type); font-size: .8rem; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-mute); margin: 0; }
+.legal__summary { padding: 22px 26px; margin-bottom: 40px; border-top: 5px solid var(--towel); }
+.legal__summary p:last-child { margin: 0; }
+.legal h2 { font-size: clamp(1.5rem, 2.6vw, 1.9rem); margin: 44px 0 14px; }
+.legal ul { padding-left: 1.2em; margin: 0 0 1em; color: var(--ink-2); }
+.legal li { margin-bottom: 8px; }
+.legal li::marker { color: var(--paprika); }
+.legal__others { margin-top: 56px; padding-top: 22px; border-top: 1px dashed var(--line); font-family: var(--type); font-size: .82rem; letter-spacing: .08em; text-transform: uppercase; }
+.legal__others a { margin-right: 20px; }
+.footer__links a[aria-current="page"] { color: var(--honey); }

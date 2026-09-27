@@ -11,8 +11,14 @@ if (window.Paddle) {
   Paddle.Initialize({
     token: PADDLE_TOKEN,
     eventCallback: e => {
+      const track = (name, data) => { if (window.umami) umami.track(name, data); };
+      if (e.name === 'checkout.loaded') track('Checkout opened');
+      if (e.name === 'checkout.closed') track('Checkout closed without buying');
       if (e.name === 'checkout.completed' && e.data && e.data.transaction_id) {
-        location.href = '/download?txn=' + encodeURIComponent(e.data.transaction_id);
+        const t = e.data.totals || {};
+        track('Purchase', { revenue: t.total, currency: e.data.currency_code });
+        // short pause so the Purchase event is sent before leaving the page
+        setTimeout(() => { location.href = '/download?txn=' + encodeURIComponent(e.data.transaction_id); }, 400);
       }
     },
   });

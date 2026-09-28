@@ -5,6 +5,35 @@ const PADDLE_PRICE_ID = 'pri_01m3cnmvbdeb542pmtxvrdm919';
 
 document.querySelectorAll('[data-price]').forEach(el => { el.textContent = PRICE; });
 
+// ---- Sales popup: once per visitor, 10 seconds after the first visit ----
+const POPUP_DELAY = 10000;
+const popup = document.getElementById('popup');
+const store = {
+  get: k => { try { return localStorage.getItem(k); } catch { return null; } },
+  set: (k, v) => { try { localStorage.setItem(k, v); } catch {} },
+};
+function closePopup() {
+  if (!popup || popup.hidden) return;
+  popup.hidden = true;
+  document.body.classList.remove('has-popup');
+}
+if (popup && !store.get('popupSeen')) {
+  const first = Number(store.get('firstVisit')) || Date.now();
+  store.set('firstVisit', first);
+  setTimeout(() => {
+    if (document.querySelector('.paddle-frame')) return; // already in checkout
+    popup.hidden = false;
+    document.body.classList.add('has-popup');
+    store.set('popupSeen', '1');
+    popup.querySelector('.popup__close').focus();
+    if (window.umami) umami.track('Popup shown');
+  }, Math.max(0, first + POPUP_DELAY - Date.now()));
+  popup.addEventListener('click', e => {
+    if (e.target === popup || e.target.closest('[data-popup-close]')) closePopup();
+  });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closePopup(); });
+}
+
 // ---- Checkout: Buy -> Paddle overlay -> /download ----
 // If Paddle.js fails to load, the buttons keep their #order link as a fallback.
 if (window.Paddle) {
@@ -24,6 +53,7 @@ if (window.Paddle) {
   });
   document.querySelectorAll('[data-buy]').forEach(btn => btn.addEventListener('click', e => {
     e.preventDefault();
+    closePopup();
     Paddle.Checkout.open({
       items: [{ priceId: PADDLE_PRICE_ID, quantity: 1 }],
       settings: { displayMode: 'overlay', variant: 'one-page' },
@@ -43,8 +73,6 @@ const picks = [
   'Onion-Braised Brisket',
   'Slow Cholent with Barley, Beans & Beef',
   'Crisp Potato Latkes',
-  'Cheese Blintzes',
-  'Challah Bread Pudding',
 ];
 document.getElementById('ledger-rows').innerHTML = picks
   .map(name => all.find(r => r.name === name))
@@ -70,35 +98,9 @@ const updateCalc = () => {
 slider.addEventListener('input', updateCalc);
 updateCalc();
 
-// ---- Chapters + filter ----
-const chaptersEl = document.getElementById('chapters');
-chaptersEl.innerHTML = book.map(ch => `
-  <article class="card chapter reveal">
-    <span class="chapter__n">Chapter ${ch.n}</span>
-    <h3>${ch.title}</h3>
-    <p class="chapter__sub">${ch.sub}</p>
-    <ul>
-      ${ch.recipes.map(r => `
-        <li data-tags="${tagsOf(r).join(' ')}${r.leftovers ? ' LEFT' : ''}">
-          <span>${r.name}${tagsOf(r).map(t => `<span class="tag tag--${t}">${t}</span>`).join('')}</span>
-          <b>${r.home.replace('-', '–')}</b>
-        </li>`).join('')}
-    </ul>
-  </article>`).join('');
-
-document.querySelectorAll('.chip').forEach(chip => chip.addEventListener('click', () => {
-  document.querySelectorAll('.chip').forEach(c => c.classList.toggle('is-on', c === chip));
-  const tag = chip.dataset.tag;
-  chaptersEl.querySelectorAll('.chapter').forEach(card => {
-    let shown = 0;
-    card.querySelectorAll('li').forEach(li => {
-      const ok = tag === 'ALL' || li.dataset.tags.split(' ').includes(tag);
-      li.classList.toggle('is-hidden', !ok);
-      shown += ok;
-    });
-    card.classList.toggle('is-empty', shown === 0);
-  });
-}));
+// ---- Table of contents: chapter titles only ----
+document.getElementById('toc').innerHTML = book
+  .map(ch => `<li><span>${String(ch.n).padStart(2, '0')}</span>${ch.title}</li>`).join('');
 
 // ---- Scroll reveal ----
 const io = 'IntersectionObserver' in window && !matchMedia('(prefers-reduced-motion: reduce)').matches

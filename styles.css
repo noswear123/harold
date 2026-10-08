@@ -516,12 +516,8 @@ body.has-popup { overflow: hidden; }
 /* Inline, used beside every displayed price — inherits the colour of whatever
    it sits in (dark strip, cream card, coloured button) and sizes with it. */
 .offer__was { font-family: var(--type); font-size: .82em; font-weight: 400; opacity: .62; margin-right: .42em; text-decoration: line-through; text-decoration-thickness: 2px; text-underline-offset: 1px; white-space: nowrap; }
-.offer__pct { display: inline-block; font-family: var(--type); font-size: .82em; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--card); background: var(--paprika); padding: 2px 7px; border-radius: 3px; white-space: nowrap; }
-.strip .offer__pct { padding: 1px 6px; }
 
 /* The order card is the loudest instance: a big struck figure and a full badge. */
 .price__was { font-family: var(--display); font-size: 2rem; line-height: 1; color: var(--ink-mute); text-decoration-thickness: 3px; }
 .price__off { align-self: center; font-family: var(--type); font-size: .78rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--card); background: var(--paprika); padding: 7px 11px; border-radius: 3px; white-space: nowrap; }
-.price__now .offer__was { display: none; }   /* big price shows its own .price__was instead */
 
-.popup__kicker .offer__pct { font-size: 1em; }

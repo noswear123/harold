@@ -14,28 +14,24 @@
 //
 // 2. The PDF lives in a PRIVATE Vercel Blob store, so it has no publicly
 //    fetchable URL. It can only be read through this function, after the
-//    payment check above has passed. Authentication is OIDC, which Vercel wires
-//    up automatically once the store is connected to the project.
+//    payment check above has passed. Vercel authenticates the read over OIDC
+//    automatically once the store is connected to the project.
+//
+// Runs on the Node.js runtime, not the edge, for two reasons: @vercel/blob
+// depends on undici, which needs node:stream and friends and fails an edge
+// build outright; and this file uses Vercel's (req, res) Node handler.
 //
 // Environment:
-//   PADDLE_API_KEY   server-side Paddle key, used to look the transaction up
-//   BLOB_STORE_ID    added automatically when the Blob store is connected
-//   VERCEL_OIDC_TOKEN added and rotated automatically by Vercel
-// Runs on the Node.js runtime, not the edge: @vercel/blob depends on undici,
-// which needs node:stream, node:net, node:tls and friends, and an edge build
-// fails outright with "referencing unsupported modules".
+//   PADDLE_API_KEY     server-side Paddle key, used to look the transaction up
+//   BLOB_STORE_ID      added automatically when the Blob store is connected
+//   VERCEL_OIDC_TOKEN  added and rotated automatically by Vercel
+import { Readable } from 'node:stream';
 import { get } from '@vercel/blob';
 
 const PRICE_ID = 'pri_01m3cnmvbdeb542pmtxvrdm919';
 const PDF_PATHNAME = process.env.PDF_PATHNAME || 'cookbook.pdf';
 const FILENAME = 'Frugal-Jewish-Kitchen-Harold-Rosenberg-2026.pdf';
 const HELP = 'Please email hello@haroldcooks.com with your Paddle receipt and we will send your cookbook.';
-
-const json = (body, status = 200) =>
-  new Response(JSON.stringify(body), {
-    status,
-    headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
-  });
 
 async function isPaid(txn, apiKey) {
   const r = await fetch(`https://api.paddle.com/transactions/${txn}`, {
@@ -47,44 +43,51 @@ async function isPaid(txn, apiKey) {
   return (data.items || []).some(i => i.price?.id === PRICE_ID);
 }
 
-export default async function handler(request) {
-  const url = new URL(request.url);
-  const txn = url.searchParams.get('txn') || '';
-  const checkOnly = url.searchParams.has('check');
+export default async function handler(req, res) {
+  const txn = (req.query?.txn || '').toString();
+  const checkOnly = req.query?.check !== undefined;
+
+  const fail = (status, ready, error, text) => {
+    res.setHeader('Cache-Control', 'no-store');
+    return checkOnly
+      ? res.status(status).json(error ? { ready, error } : { ready })
+      : res.status(status).send(text);
+  };
 
   if (!/^txn_[a-z0-9]{20,40}$/.test(txn)) {
-    return checkOnly
-      ? json({ ready: false, error: 'invalid' }, 400)
-      : new Response(`This download link is not valid. ${HELP}`, { status: 400 });
+    return fail(400, false, 'invalid', `This download link is not valid. ${HELP}`);
   }
 
   const apiKey = process.env.PADDLE_API_KEY;
   if (!apiKey) {
-    return checkOnly
-      ? json({ ready: false, error: 'not_configured' }, 500)
-      : new Response(`The download is temporarily unavailable. ${HELP}`, { status: 500 });
+    return fail(500, false, 'not_configured', `The download is temporarily unavailable. ${HELP}`);
   }
 
-  if (!(await isPaid(txn, apiKey))) {
-    return checkOnly
-      ? json({ ready: false })
-      : new Response(`We could not find a completed payment for this order yet. ${HELP}`, { status: 404 });
-  }
-  if (checkOnly) return json({ ready: true });
+  try {
+    if (!(await isPaid(txn, apiKey))) {
+      return fail(404, false, null, `We could not find a completed payment for this order yet. ${HELP}`);
+    }
+    if (checkOnly) {
+      res.setHeader('Cache-Control', 'no-store');
+      return res.status(200).json({ ready: true });
+    }
 
-  // Paid and verified — now, and only now, read the private blob.
-  const result = await get(PDF_PATHNAME, { access: 'private' });
-  if (result?.statusCode !== 200) {
-    return new Response(`The cookbook file is temporarily unavailable. ${HELP}`, { status: 500 });
-  }
+    // Paid and verified — now, and only now, read the private blob.
+    const result = await get(PDF_PATHNAME, { access: 'private' });
+    if (result?.statusCode !== 200) {
+      return res.status(500).send(`The cookbook file is temporarily unavailable. ${HELP}`);
+    }
 
-  return new Response(result.stream, {
-    headers: {
-      'Content-Type': result.blob.contentType || 'application/pdf',
-      'Content-Disposition': `attachment; filename="${FILENAME}"`,
-      'Cache-Control': 'private, no-cache',
-      'X-Content-Type-Options': 'nosniff',
-      'X-Robots-Tag': 'noindex',
-    },
-  });
+    res.setHeader('Content-Type', result.blob?.contentType || 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${FILENAME}"`);
+    res.setHeader('Cache-Control', 'private, no-cache');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Robots-Tag', 'noindex');
+    return Readable.fromWeb(result.stream).pipe(res);
+  } catch (err) {
+    // Never let an exception surface as Vercel's raw crash page: a buyer who has
+    // actually paid should always get a sentence telling them what to do next.
+    console.error('download failed', txn, err);
+    return fail(500, false, 'error', `The download is temporarily unavailable. ${HELP}`);
+  }
 }

@@ -33,14 +33,19 @@ const PDF_PATHNAME = process.env.PDF_PATHNAME || 'cookbook.pdf';
 const FILENAME = 'Frugal-Jewish-Kitchen-Harold-Rosenberg-2026.pdf';
 const HELP = 'Please email hello@haroldcooks.com with your Paddle receipt and we will send your cookbook.';
 
-async function isPaid(txn, apiKey) {
+// Returns { paid } on success, or { error } when Paddle itself could not be
+// asked. Those two cases look identical to a buyer but mean very different
+// things to us: "not paid" is a real answer, "paddle_403" is a broken API key.
+async function checkPaddle(txn, apiKey) {
   const r = await fetch(`https://api.paddle.com/transactions/${txn}`, {
     headers: { Authorization: `Bearer ${apiKey}` },
   });
-  if (!r.ok) return false;
+  if (!r.ok) return { error: `paddle_${r.status}` };
   const { data } = await r.json();
-  if (!data || data.status !== 'completed') return false;
-  return (data.items || []).some(i => i.price?.id === PRICE_ID);
+  if (!data) return { error: 'paddle_no_data' };
+  const paid = data.status === 'completed'
+    && (data.items || []).some(i => i.price?.id === PRICE_ID);
+  return { paid };
 }
 
 export default async function handler(req, res) {
@@ -64,7 +69,12 @@ export default async function handler(req, res) {
   }
 
   try {
-    if (!(await isPaid(txn, apiKey))) {
+    const { paid, error } = await checkPaddle(txn, apiKey);
+    if (error) {
+      console.error('paddle lookup failed', txn, error);
+      return fail(502, false, error, `The download is temporarily unavailable. ${HELP}`);
+    }
+    if (!paid) {
       return fail(404, false, null, `We could not find a completed payment for this order yet. ${HELP}`);
     }
     if (checkOnly) {

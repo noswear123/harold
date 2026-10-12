@@ -40,7 +40,15 @@ async function checkPaddle(txn, apiKey) {
   const r = await fetch(`https://api.paddle.com/transactions/${txn}`, {
     headers: { Authorization: `Bearer ${apiKey}` },
   });
-  if (!r.ok) return { error: `paddle_${r.status}` };
+  if (!r.ok) {
+    // Surface Paddle's own error code. "authentication_malformed" means the
+    // value in PADDLE_API_KEY is not a key at all; "invalid_token" or similar
+    // means it is a key, but revoked or from a different seller account.
+    // Only the code is exposed, never the key.
+    let code = '';
+    try { code = (await r.json())?.error?.code || ''; } catch {}
+    return { error: `paddle_${r.status}${code ? '_' + code : ''}` };
+  }
   const { data } = await r.json();
   if (!data) return { error: 'paddle_no_data' };
   const paid = data.status === 'completed'

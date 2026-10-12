@@ -1,12 +1,13 @@
 // ---- Site settings ----
-const PRICE = '$22.99';               // what the customer actually pays — keep in sync with Paddle
+const PRICE = '$12.99';               // what the customer actually pays — keep in sync with Paddle
 const PADDLE_TOKEN = 'live_235420c889bd31b53a07951c584';   // client-side token, safe to publish
 const PADDLE_PRICE_ID = 'pri_01m3cnmvbdeb542pmtxvrdm919';
 
 // ---- Offer display ----
-// PRICE_WAS is struck through wherever PRICE appears. 22.99 is 40% off 38.32.
+// PRICE_WAS is struck through beside PRICE. $12.99 is exactly 40% off
+// $21.65 (12.99 / 0.60 = 21.65), so the figures and the percentage agree.
 // Set PRICE_WAS to '' to remove the strike-through and the badges everywhere.
-const PRICE_WAS = '$38.32';
+const PRICE_WAS = '$21.65';
 const DISCOUNT_PCT = '40%';
 // If the saving is a real Paddle discount rather than only a label, put its code
 // here and it is applied automatically, so the Paddle overlay shows the same

@@ -21,9 +21,10 @@
 //   PADDLE_API_KEY   server-side Paddle key, used to look the transaction up
 //   BLOB_STORE_ID    added automatically when the Blob store is connected
 //   VERCEL_OIDC_TOKEN added and rotated automatically by Vercel
+// Runs on the Node.js runtime, not the edge: @vercel/blob depends on undici,
+// which needs node:stream, node:net, node:tls and friends, and an edge build
+// fails outright with "referencing unsupported modules".
 import { get } from '@vercel/blob';
-
-export const config = { runtime: 'edge' };
 
 const PRICE_ID = 'pri_01m3cnmvbdeb542pmtxvrdm919';
 const PDF_PATHNAME = process.env.PDF_PATHNAME || 'cookbook.pdf';

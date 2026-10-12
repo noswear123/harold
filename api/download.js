@@ -3,19 +3,30 @@
 //   GET /api/download?txn=txn_...&check=1  -> { ready: true|false }
 //   GET /api/download?txn=txn_...          -> the PDF
 //
-// Entitlement is checked against the Paddle API directly rather than against a
-// record written by the webhook. That matters: on 12 Oct a buyer paid, the
-// webhook was delivered and the order was recorded, yet she never reached this
-// page and had no way to get her book. Asking Paddle at download time means the
-// download works whenever the payment is real, even if the webhook never
-// arrives, is delayed, or the signing secret is wrong.
+// Two things worth knowing about how this works:
+//
+// 1. Entitlement is checked against the Paddle API directly, not against a
+//    record written by the webhook. On 12 Oct a buyer paid, the webhook was
+//    delivered and the order was recorded, yet she never reached the download
+//    page and had no way to get her book. Asking Paddle at download time means
+//    the download works whenever the payment is real, even if the webhook is
+//    late, misconfigured, or never arrives at all.
+//
+// 2. The PDF lives in a PRIVATE Vercel Blob store, so it has no publicly
+//    fetchable URL. It can only be read through this function, after the
+//    payment check above has passed. Authentication is OIDC, which Vercel wires
+//    up automatically once the store is connected to the project.
 //
 // Environment:
-//   PADDLE_API_KEY  server-side key, used to look the transaction up
-//   PDF_URL         unguessable URL of the PDF (Vercel Blob), never public here
+//   PADDLE_API_KEY   server-side Paddle key, used to look the transaction up
+//   BLOB_STORE_ID    added automatically when the Blob store is connected
+//   VERCEL_OIDC_TOKEN added and rotated automatically by Vercel
+import { get } from '@vercel/blob';
+
 export const config = { runtime: 'edge' };
 
 const PRICE_ID = 'pri_01m3cnmvbdeb542pmtxvrdm919';
+const PDF_PATHNAME = process.env.PDF_PATHNAME || 'cookbook.pdf';
 const FILENAME = 'Frugal-Jewish-Kitchen-Harold-Rosenberg-2026.pdf';
 const HELP = 'Please email hello@haroldcooks.com with your Paddle receipt and we will send your cookbook.';
 
@@ -60,17 +71,18 @@ export default async function handler(request) {
   }
   if (checkOnly) return json({ ready: true });
 
-  const pdfUrl = process.env.PDF_URL;
-  if (!pdfUrl) return new Response(`The cookbook file is temporarily unavailable. ${HELP}`, { status: 500 });
+  // Paid and verified — now, and only now, read the private blob.
+  const result = await get(PDF_PATHNAME, { access: 'private' });
+  if (result?.statusCode !== 200) {
+    return new Response(`The cookbook file is temporarily unavailable. ${HELP}`, { status: 500 });
+  }
 
-  const pdf = await fetch(pdfUrl, { cache: 'no-store' });
-  if (!pdf.ok) return new Response(`The cookbook file is temporarily unavailable. ${HELP}`, { status: 500 });
-
-  return new Response(pdf.body, {
+  return new Response(result.stream, {
     headers: {
-      'Content-Type': 'application/pdf',
+      'Content-Type': result.blob.contentType || 'application/pdf',
       'Content-Disposition': `attachment; filename="${FILENAME}"`,
-      'Cache-Control': 'private, no-store',
+      'Cache-Control': 'private, no-cache',
+      'X-Content-Type-Options': 'nosniff',
       'X-Robots-Tag': 'noindex',
     },
   });

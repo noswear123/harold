@@ -47,7 +47,9 @@ async function checkPaddle(txn, apiKey) {
     // Only the code is exposed, never the key.
     let code = '';
     try { code = (await r.json())?.error?.code || ''; } catch {}
-    return { error: `paddle_${r.status}${code ? '_' + code : ''}` };
+    // Shape only — enough to tell a real key from a checkout token, never the value.
+    const shape = `${apiKey.slice(0, 16)}…len${apiKey.length}`;
+    return { error: `paddle_${r.status}${code ? '_' + code : ''}`, shape };
   }
   const { data } = await r.json();
   if (!data) return { error: 'paddle_no_data' };
@@ -71,16 +73,19 @@ export default async function handler(req, res) {
     return fail(400, false, 'invalid', `This download link is not valid. ${HELP}`);
   }
 
-  const apiKey = process.env.PADDLE_API_KEY;
+  // Tolerate the two things that routinely survive a copy-paste into a hosting
+  // dashboard: surrounding whitespace or a newline, and a "Bearer " prefix.
+  // Either one makes Paddle reject the header as authentication_malformed.
+  const apiKey = (process.env.PADDLE_API_KEY || '').trim().replace(/^Bearer\s+/i, '');
   if (!apiKey) {
     return fail(500, false, 'not_configured', `The download is temporarily unavailable. ${HELP}`);
   }
 
   try {
-    const { paid, error } = await checkPaddle(txn, apiKey);
+    const { paid, error, shape } = await checkPaddle(txn, apiKey);
     if (error) {
-      console.error('paddle lookup failed', txn, error);
-      return fail(502, false, error, `The download is temporarily unavailable. ${HELP}`);
+      console.error('paddle lookup failed', txn, error, shape);
+      return fail(502, false, `${error} key=${shape}`, `The download is temporarily unavailable. ${HELP}`);
     }
     if (!paid) {
       return fail(404, false, null, `We could not find a completed payment for this order yet. ${HELP}`);

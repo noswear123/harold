@@ -75,7 +75,14 @@ if (window.Paddle) {
     Paddle.Checkout.open({
       items: [{ priceId: PADDLE_PRICE_ID, quantity: 1 }],
       ...(CHECKOUT_DISCOUNT_CODE ? { discountCode: CHECKOUT_DISCOUNT_CODE } : {}),
-      settings: { displayMode: 'overlay', variant: 'one-page' },
+      settings: {
+        displayMode: 'overlay',
+        variant: 'one-page',
+        // Paddle redirects here itself, appending ?_ptxn=<transaction id>.
+        // This is the fallback for when the eventCallback below does not
+        // run — blocked scripts, in-app browsers, a backgrounded tab.
+        successUrl: location.origin + '/download',
+      },
     });
   }));
 }

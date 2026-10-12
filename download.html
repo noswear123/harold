@@ -38,7 +38,9 @@
 <script>
 // Waits for Paddle's payment confirmation (usually a few seconds), then enables the button.
 (function () {
-  var txn = new URLSearchParams(location.search).get('txn') || '';
+  // 'txn' comes from our own redirect, '_ptxn' from Paddle's successUrl.
+  var q = new URLSearchParams(location.search);
+  var txn = q.get('txn') || q.get('_ptxn') || '';
   var btn = document.getElementById('download');
   var help = document.getElementById('help');
   var contact = ' Please email <a href="mailto:hello@haroldcooks.com?subject=Cookbook%20download">hello@haroldcooks.com</a> with your Paddle receipt and we will send your cookbook right away.';

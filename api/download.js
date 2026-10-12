@@ -47,7 +47,8 @@ async function checkPaddle(txn, apiKey) {
     // Only the code is exposed, never the key.
     let code = '';
     try { code = (await r.json())?.error?.code || ''; } catch {}
-    // Shape only — enough to tell a real key from a checkout token, never the value.
+    // Shape only — enough to tell a real key from a checkout token, never the
+    // value, and it goes to the server log rather than the response.
     const shape = `${apiKey.slice(0, 16)}…len${apiKey.length}`;
     return { error: `paddle_${r.status}${code ? '_' + code : ''}`, shape };
   }
@@ -85,7 +86,7 @@ export default async function handler(req, res) {
     const { paid, error, shape } = await checkPaddle(txn, apiKey);
     if (error) {
       console.error('paddle lookup failed', txn, error, shape);
-      return fail(502, false, `${error} key=${shape}`, `The download is temporarily unavailable. ${HELP}`);
+      return fail(502, false, error, `The download is temporarily unavailable. ${HELP}`);
     }
     if (!paid) {
       return fail(404, false, null, `We could not find a completed payment for this order yet. ${HELP}`);

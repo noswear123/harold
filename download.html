@@ -28,54 +28,17 @@
 <main class="thanks">
   <div class="wrap thanks__in">
     <h1>Thank You for Your Purchase</h1>
-    <p class="thanks__text">Your cookbook is ready. Click the button below to download it.</p>
-    <a class="btn btn--big btn--download" id="download" href="#" data-umami-event="Download click" aria-disabled="true">Please wait a moment…</a>
-    <p class="thanks__note" id="note" hidden>The file will be saved to your Downloads folder. You can come back to this page to download it again.</p>
-    <p class="thanks__help" id="help" hidden></p>
+    <p class="thanks__text">Your cookbook is ready, and we have emailed it to you.</p>
+    <p class="thanks__mail">Look for a message from <b>hello@haroldcooks.com</b> with the
+      cookbook attached and a download link. It usually arrives within a minute.</p>
+    <p class="thanks__note">Nothing yet? Check your spam or promotions folder &mdash; a first
+      email from a new sender often lands there.</p>
+    <p class="thanks__help">Still nothing after a few minutes, or the file will not open?
+      Email <a href="mailto:hello@haroldcooks.com?subject=Cookbook%20download">hello@haroldcooks.com</a>
+      with your Paddle receipt and we will send your cookbook straight over.</p>
+    <a class="btn btn--ghost thanks__home" href="index.html">Back to the home page</a>
   </div>
 </main>
 
-<script>
-// Waits for Paddle's payment confirmation (usually a few seconds), then enables the button.
-(function () {
-  // 'txn' comes from our own redirect, '_ptxn' from Paddle's successUrl.
-  var q = new URLSearchParams(location.search);
-  var txn = q.get('txn') || q.get('_ptxn') || '';
-  var btn = document.getElementById('download');
-  var help = document.getElementById('help');
-  var contact = ' Please email <a href="mailto:hello@haroldcooks.com?subject=Cookbook%20download">hello@haroldcooks.com</a> with your Paddle receipt and we will send your cookbook right away.';
-  var tries = 0;
-
-  function showHelp(html) { help.innerHTML = html; help.hidden = false; }
-
-  if (!/^txn_[a-z0-9]{20,40}$/.test(txn)) {
-    btn.hidden = true;
-    showHelp('We could not find your order on this page.' + contact);
-    return;
-  }
-
-  function check() {
-    fetch('/api/download?check=1&txn=' + encodeURIComponent(txn), { cache: 'no-store' })
-      .then(function (r) { return r.json(); })
-      .then(function (d) {
-        if (d.ready) {
-          btn.href = '/api/download?txn=' + encodeURIComponent(txn);
-          btn.textContent = 'DOWNLOAD YOUR COOKBOOK';
-          btn.removeAttribute('aria-disabled');
-          document.getElementById('note').hidden = false;
-          help.hidden = true;
-        } else retry();
-      })
-      .catch(retry);
-  }
-  function retry() {
-    tries++;
-    if (tries === 10) showHelp('Your payment is still being confirmed. This page will keep checking, so please leave it open.');
-    if (tries === 45) showHelp('This is taking longer than usual. Please refresh this page in a few minutes.' + contact);
-    if (tries < 90) setTimeout(check, 2000);
-  }
-  check();
-})();
-</script>
 </body>
 </html>

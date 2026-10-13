@@ -16,7 +16,7 @@
 //                          (the pdl_ntfset_-prefixed secret, NOT the ntfset_ id)
 //   PADDLE_API_KEY         server-side key, used to look up the buyer's email
 //   BREVO_API_KEY          Brevo transactional email key
-//   PDF_PRIVATE_URL        https://<store>.private.blob.vercel-storage.com/cookbook.pdf
+//   PDF_PRIVATE_URL        optional — derived from BLOB_STORE_ID when unset
 //   VERCEL_OIDC_TOKEN      injected and rotated by Vercel; authenticates the blob read
 export const config = { runtime: 'edge' };
 
@@ -68,9 +68,22 @@ async function buyerEmail(txn) {
   return (await r.json())?.data?.email || null;
 }
 
+// Private blobs live at https://<store-id>.private.blob.vercel-storage.com/<pathname>,
+// and BLOB_STORE_ID is injected automatically when the store is connected to the
+// project — so the URL can be derived and usually needs no configuring. The id
+// carries a "store_" prefix that the hostname does not. PDF_PRIVATE_URL overrides
+// the whole thing if the derived form is ever wrong.
+function privatePdfUrl() {
+  if (process.env.PDF_PRIVATE_URL) return process.env.PDF_PRIVATE_URL.trim();
+  const id = (process.env.BLOB_STORE_ID || '').trim().replace(/^store_/, '');
+  if (!id) return null;
+  const pathname = (process.env.PDF_PATHNAME || 'cookbook.pdf').replace(/^\/+/, '');
+  return `https://${id}.private.blob.vercel-storage.com/${pathname}`;
+}
+
 // Private blobs have no public URL; read them with the OIDC token Vercel injects.
 async function pdfBase64() {
-  const url = process.env.PDF_PRIVATE_URL;
+  const url = privatePdfUrl();
   const token = process.env.VERCEL_OIDC_TOKEN || process.env.BLOB_READ_WRITE_TOKEN;
   if (!url || !token) return null;
   const r = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });

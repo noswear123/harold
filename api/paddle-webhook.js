@@ -1,5 +1,5 @@
-// Receives Paddle webhooks, verifies the signature, and emails the buyer their
-// receipt with the cookbook attached.
+// Receives Paddle webhooks, verifies the signature, and emails the buyer a
+// download link for the cookbook.
 //
 // The download does not depend on this running — api/download.js asks Paddle
 // directly whether a transaction was paid — so a failure here can never stop
@@ -16,15 +16,12 @@
 //                          (the pdl_ntfset_-prefixed secret, NOT the ntfset_ id)
 //   PADDLE_API_KEY         server-side key, used to look up the buyer's email
 //   BREVO_API_KEY          Brevo transactional email key
-//   PDF_PRIVATE_URL        optional — derived from BLOB_STORE_ID when unset
-//   VERCEL_OIDC_TOKEN      injected and rotated by Vercel; authenticates the blob read
 export const config = { runtime: 'edge' };
 
 const PRICE_ID = 'pri_01m3cnmvbdeb542pmtxvrdm919';
 const MAX_AGE_SECONDS = 5 * 60; // reject old, replayed webhooks
 const SITE = 'https://www.haroldcooks.com';
 const FROM = { name: 'Grandpa Harold Cooks', email: 'hello@haroldcooks.com' };
-const FILENAME = 'Frugal-Jewish-Kitchen-Harold-Rosenberg-2026.pdf';
 
 const hex = buf => [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
 
@@ -68,42 +65,15 @@ async function buyerEmail(txn) {
   return (await r.json())?.data?.email || null;
 }
 
-// Private blobs live at https://<store-id>.private.blob.vercel-storage.com/<pathname>,
-// and BLOB_STORE_ID is injected automatically when the store is connected to the
-// project — so the URL can be derived and usually needs no configuring. The id
-// carries a "store_" prefix that the hostname does not. PDF_PRIVATE_URL overrides
-// the whole thing if the derived form is ever wrong.
-function privatePdfUrl() {
-  if (process.env.PDF_PRIVATE_URL) return process.env.PDF_PRIVATE_URL.trim();
-  const id = (process.env.BLOB_STORE_ID || '').trim().replace(/^store_/, '');
-  if (!id) return null;
-  const pathname = (process.env.PDF_PATHNAME || 'cookbook.pdf').replace(/^\/+/, '');
-  return `https://${id}.private.blob.vercel-storage.com/${pathname}`;
-}
-
-// Private blobs have no public URL; read them with the OIDC token Vercel injects.
-async function pdfBase64() {
-  const url = privatePdfUrl();
-  const token = process.env.VERCEL_OIDC_TOKEN || process.env.BLOB_READ_WRITE_TOKEN;
-  if (!url || !token) return null;
-  const r = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-  if (!r.ok) return null;
-  const bytes = new Uint8Array(await r.arrayBuffer());
-  let binary = '';
-  for (let i = 0; i < bytes.length; i += 0x8000) {
-    binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
-  }
-  return btoa(binary);
-}
-
 function body(link) {
   return `<div style="font-family:Georgia,serif;font-size:16px;line-height:1.6;color:#231A12;max-width:520px">
   <p>Thank you for buying <i>Frugal Jewish Kitchen That Saves You Money</i>.</p>
-  <p>Your copy is attached to this email, so it is yours to keep. You can also
-     download it again at any time from this link:</p>
-  <p><a href="${link}" style="color:#9A2E1B">Download your cookbook</a></p>
-  <p>If the attachment does not open or the link stops working, just reply to this
-     email and we will send it straight over.</p>
+  <p><a href="${link}" style="display:inline-block;background:#9A2E1B;color:#F4ECDC;padding:14px 26px;border-radius:6px;text-decoration:none;font-weight:bold">Download your cookbook</a></p>
+  <p>Or paste this into your browser:<br><span style="color:#6E5D4A">${link}</span></p>
+  <p>Keep this email — the link stays valid, so you can download the cookbook again
+     whenever you need it.</p>
+  <p>If the link ever stops working, just reply to this email and we will send your
+     cookbook straight over.</p>
   <p>Enjoy the cooking.<br>— Grandpa Harold Cooks</p>
 </div>`;
 }
@@ -116,24 +86,20 @@ async function sendReceipt(txn) {
   if (!to) return 'no_email';
 
   const link = `${SITE}/download?txn=${encodeURIComponent(txn.id)}`;
-  const pdf = await pdfBase64();
-
-  const payload = {
-    sender: FROM,
-    to: [{ email: to }],
-    subject: 'Your cookbook is here',
-    htmlContent: body(link),
-    ...(pdf ? { attachment: [{ content: pdf, name: FILENAME }] } : {}),
-  };
 
   const r = await fetch('https://api.brevo.com/v3/smtp/email', {
     method: 'POST',
     headers: { 'api-key': apiKey, 'content-type': 'application/json', accept: 'application/json' },
-    body: JSON.stringify(payload),
+    body: JSON.stringify({
+      sender: FROM,
+      to: [{ email: to }],
+      subject: 'Your cookbook is ready to download',
+      htmlContent: body(link),
+    }),
   });
-  // Deliberately not fatal: the buyer can still download, so a mail outage must
-  // not turn into a Paddle retry storm.
-  return r.ok ? (pdf ? 'sent_with_pdf' : 'sent_link_only') : `brevo_${r.status}`;
+  // Deliberately not fatal: the buyer can still reach the download page, so a
+  // mail outage must not turn into a Paddle retry storm.
+  return r.ok ? 'sent' : `brevo_${r.status}`;
 }
 
 export default async function handler(request) {

@@ -28,17 +28,62 @@
 <main class="thanks">
   <div class="wrap thanks__in">
     <h1>Thank You for Your Purchase</h1>
-    <p class="thanks__text">Your cookbook is ready, and we have emailed it to you.</p>
-    <p class="thanks__mail">Look for a message from <b>hello@haroldcooks.com</b> with the
-      cookbook attached and a download link. It usually arrives within a minute.</p>
-    <p class="thanks__note">Nothing yet? Check your spam or promotions folder &mdash; a first
-      email from a new sender often lands there.</p>
-    <p class="thanks__help">Still nothing after a few minutes, or the file will not open?
-      Email <a href="mailto:hello@haroldcooks.com?subject=Cookbook%20download">hello@haroldcooks.com</a>
-      with your Paddle receipt and we will send your cookbook straight over.</p>
+
+    <!-- Shown when the page is opened from the link in the receipt email. -->
+    <div id="with-link" hidden>
+      <p class="thanks__text">Your cookbook is ready.</p>
+      <a class="btn btn--big btn--download" id="download" href="#" data-umami-event="Download click" aria-disabled="true">Checking your order&hellip;</a>
+      <p class="thanks__note" id="note" hidden>The file will be saved to your Downloads folder. You can come back to this page and download it again any time.</p>
+    </div>
+
+    <!-- Shown straight after checkout, where Paddle sends no transaction id. -->
+    <div id="no-link">
+      <p class="thanks__text">Your cookbook is ready, and we have emailed it to you.</p>
+      <p class="thanks__mail">Look for a message from <b>hello@haroldcooks.com</b> with your
+        download link. It usually arrives within a minute.</p>
+      <p class="thanks__note">Nothing yet? Check your spam or promotions folder &mdash; a first
+        email from a new sender often lands there.</p>
+    </div>
+
+    <p class="thanks__help" id="help" hidden></p>
     <a class="btn btn--ghost thanks__home" href="index.html">Back to the home page</a>
   </div>
 </main>
+
+<script>
+// Opened from the email link (?txn=...), show a download button. Opened straight
+// from checkout, where Paddle sends no transaction id, point the buyer at the email.
+//
+// No polling loop any more: /api/download asks Paddle directly whether the
+// payment went through, so the answer is right the first time and no longer
+// waits on the webhook.
+(function () {
+  var txn = new URLSearchParams(location.search).get('txn') || '';
+  var help = document.getElementById('help');
+  var contact = ' Please email <a href="mailto:hello@haroldcooks.com?subject=Cookbook%20download">hello@haroldcooks.com</a> with your Paddle receipt and we will send your cookbook right away.';
+
+  if (!/^txn_[a-z0-9]{20,40}$/.test(txn)) return;   // leave the "check your email" copy up
+
+  document.getElementById('no-link').hidden = true;
+  document.getElementById('with-link').hidden = false;
+
+  var btn = document.getElementById('download');
+  fetch('/api/download?check=1&txn=' + encodeURIComponent(txn), { cache: 'no-store' })
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      if (!d.ready) throw new Error('not ready');
+      btn.href = '/api/download?txn=' + encodeURIComponent(txn);
+      btn.textContent = 'DOWNLOAD YOUR COOKBOOK';
+      btn.removeAttribute('aria-disabled');
+      document.getElementById('note').hidden = false;
+    })
+    .catch(function () {
+      btn.hidden = true;
+      help.innerHTML = 'We could not confirm this order automatically.' + contact;
+      help.hidden = false;
+    });
+})();
+</script>
 
 </body>
 </html>
